@@ -8,5 +8,5 @@ def config_all():
 
 def config_ssh():
     # run_cmd("cp -r '/root/.ssh' '/content/gdrive/My Drive/core/configs/ssh'")
-    run_cmd("cp -rf '/content/gdrive/My Drive/core/configs/ssh/rsa' '~/.ssh/'")
-    run_cmd("cp -rf '/content/gdrive/My Drive/core/configs/ssh/rsa' '~/.ssh/'")
+    run_cmd("cp -rf '/content/gdrive/My Drive/core/configs/ssh/id_rsa' '~/.ssh/'")
+    run_cmd("cp -rf '/content/gdrive/My Drive/core/configs/ssh/id_rsa.pub' '~/.ssh/'")
