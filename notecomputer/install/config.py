@@ -10,6 +10,9 @@ def config_all():
     logger.info("config all done")
 
 
+def config_init():
+    run_cmd("pip3 install vi")
+
 def config_ssh():
     # run_cmd("cp -r '/root/.ssh' '/content/gdrive/My Drive/core/configs/ssh'")
     run_cmd("cp -rf '/content/gdrive/My Drive/core/configs/ssh/id_rsa' '/root/.ssh/'")
