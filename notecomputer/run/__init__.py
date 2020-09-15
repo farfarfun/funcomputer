@@ -1,6 +1,8 @@
 import os
 
 def run_cmd(cmd):
-    print(cmd)
+    if isinstance(cmd,list):
+        cmd = ' && '.join(cmd)
+    # print(cmd)
     os.system(cmd)
 
