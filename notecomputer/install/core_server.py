@@ -1,4 +1,4 @@
-from .base import run_cmd
+from notecomputer.run import run_cmd
 
 config_dir = '/root/configs/'
 

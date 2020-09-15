@@ -1,4 +1,0 @@
-bind-addr: 127.0.0.1:8443
-auth: password
-password: eb2420413dd73113e5e0a4ae
-cert: false
