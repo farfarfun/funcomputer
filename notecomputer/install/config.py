@@ -5,6 +5,7 @@ logger = log(name="config")
 def config_all():
     config_ssh()
     config_git()
+    config_workspace()
     run_cmd("cp -rf '/content/gdrive/My Drive/core/configs/' '/root/'")
     logger.info("config all done")
 
@@ -25,6 +26,7 @@ def config_git():
     run_cmd('git config --global user.name "niuliangtao"')
     logger.info("config git done")
 
+
 def config_workspace():
     run_cmd(["cd /root","mkdir -vp /root/workspace"])
 
@@ -34,3 +36,5 @@ def config_workspace():
     "git clone git@github.com:notechats/notedrive.git",
     "git clone git@github.com:notechats/notecomputer.git"
     ])
+    logger.info("config workspace done")
+
