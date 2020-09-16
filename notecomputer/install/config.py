@@ -11,7 +11,9 @@ def config_all():
 
 
 def config_init():
-    run_cmd("pip3 install vi")
+    run_cmd("pip3 install pip pyecharts pylint")
+    
+    
 
 def config_ssh():
     # run_cmd("cp -r '/root/.ssh' '/content/gdrive/My Drive/core/configs/ssh'")
