@@ -3,6 +3,7 @@ from notetool.tool.log import log
 logger = log(name="config")
 
 def config_all():
+    config_init()
     config_ssh()
     config_git()
     config_workspace()
@@ -11,7 +12,9 @@ def config_all():
 
 
 def config_init():
-    run_cmd("pip3 install pip pyecharts pylint")
+    run_cmd("pip3 install -U pip")
+    run_cmd("pip3 install -U twine")
+    run_cmd("pip3 install -U pyecharts pylint")
     
     
 
