@@ -34,9 +34,11 @@ def config_git():
     run_cmd('git config --global user.name "niuliangtao"')
     logger.info("config git done")
 
-
+#/root/workspace/.vscode/settings.json
 def config_workspace():
-    run_cmd(["cd /root","mkdir -vp /root/workspace"])
+    run_cmd("mkdir -vp /root/workspace")
+    run_cmd("mkdir -vp /root/workspace/.vscode")
+    run_cmd("cp -rf '/content/gdrive/My Drive/core/configs/core/settings.json' '/root/workspace/.vscode/'")
 
     run_cmd(["cd /root/workspace",
     "git clone git@github.com:notechats/notetool.git",
