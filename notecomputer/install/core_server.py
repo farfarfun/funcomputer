@@ -12,9 +12,9 @@ def install_code_server():
     run_cmd("curl -fsSL https://code-server.dev/install.sh | sh")
     
     #run_cmd("code-server --install-extension ")
-    run_cmd("code-server --install-extension tushortz.python-extended-snippets")
-    run_cmd("code-server --install-extension ms-python.python")
-    run_cmd("code-server --install-extension rogalmic.bash-debug")
+    run_cmd("code-server --config /root/configs/code/code-server.yaml --install-extension tushortz.python-extended-snippets")
+    run_cmd("code-server --config /root/configs/code/code-server.yaml --install-extension ms-python.python")
+    run_cmd("code-server --config /root/configs/code/code-server.yaml --install-extension rogalmic.bash-debug")
     
     
     
