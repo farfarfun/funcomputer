@@ -19,7 +19,11 @@ def install_code_server():
     run_cmd("code-server --config /root/configs/code/code-server.yaml --install-extension formulahendry.code-runner")
     run_cmd("code-server --config /root/configs/code/code-server.yaml --install-extension spywhere.guides")
     run_cmd("code-server --config /root/configs/code/code-server.yaml --install-extension vscode-icons-team.vscode-icons")
-    run_cmd("code-server --config /root/configs/code/code-server.yaml --install-extension ")
+    run_cmd("code-server --config /root/configs/code/code-server.yaml --install-extension yzhang.markdown-all-in-one")
+    run_cmd("code-server --config /root/configs/code/code-server.yaml --install-extension akamud.vscode-theme-onedark")
+    run_cmd("code-server --config /root/configs/code/code-server.yaml --install-extension coenraads.bracket-pair-colorizer")
+    run_cmd("code-server --config /root/configs/code/code-server.yaml --install-extension ms-python.anaconda-extension-pack")
+    run_cmd("code-server --config /root/configs/code/code-server.yaml --install-extension christian-kohler.path-intellisense")
 
     
     
