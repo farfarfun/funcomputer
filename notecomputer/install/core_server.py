@@ -16,6 +16,9 @@ def install_code_server():
     run_cmd("code-server --config /root/configs/code/code-server.yaml --install-extension ms-python.python")
     run_cmd("code-server --config /root/configs/code/code-server.yaml --install-extension rogalmic.bash-debug")
     run_cmd("code-server --config /root/configs/code/code-server.yaml --install-extension eamodio.gitlens")
+    run_cmd("code-server --config /root/configs/code/code-server.yaml --install-extension formulahendry.code-runner")
+    run_cmd("code-server --config /root/configs/code/code-server.yaml --install-extension spywhere.guides")
+    
     
     
 def install_natapp():
