@@ -1,3 +1,5 @@
+import os
+
 from notecomputer.run import run_cmd
 
 config_dir = '/root/configs/'
@@ -43,6 +45,12 @@ def start_code_server(user_data_dir="/root/workspace"):
     run_cmd(cmd)
 
 
-def start_natapp(authtoken='65a40f94924dc275'):
+def start_natapp(authtoken=None):
+    authtoken = authtoken or os.environ.get("NATAPP_AUTH_TOKEN")
+    if not authtoken:
+        raise ValueError(
+            "natapp authtoken not provided -- pass authtoken= explicitly or "
+            "set the NATAPP_AUTH_TOKEN environment variable"
+        )
     run_cmd("mkdir -vp /root/logs/natapp/")
     run_cmd("nohup ./natapp -authtoken={authtoken}  >>/root/logs/natapp/natapp.log 2>&1 &".format(authtoken=authtoken))
