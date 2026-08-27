@@ -1,6 +1,6 @@
 [project]
 name = "notecomputer"
-version = "0.0.1"
+version = "0.0.2"
 description = "notecomputer"
 readme = "README.md"
 requires-python = ">=3.10"
