@@ -7,7 +7,7 @@ Google Colab / 云端开发环境的个人一次性配置脚本集合：挂载 G
 ## 结构
 
 - `funcomputer/run/__init__.py`：`run_cmd(cmd)`，执行 shell 命令（传 list 时用 `&&` 拼接后执行）
-- `funcomputer/config/core.py`：`config_all()` / `config_init()` / `config_ssh()` / `config_git()` / `config_workspace()`，从 Google Drive 恢复 SSH key、配置 git 用户名邮箱，并把 `notetool`、`notekeras`、`notedrive`、`notecomputer` 克隆到 `/root/workspace`
+- `funcomputer/config/core.py`：`config_all()` / `config_init()` / `config_ssh()` / `config_git()` / `config_workspace()`，从 Google Drive 恢复 SSH key、配置 git 用户名邮箱，并把 `funtool`、`notekeras`、`notedrive`、`notecomputer` 克隆到 `/root/workspace`
 - `funcomputer/install/base.py`：`install_drive()` 挂载 Google Drive；`install_code_server()` 安装 code-server 并装一批 VSCode 插件；`start_code_server()` / `start_natapp()` 后台启动 code-server 和 natapp 内网穿透
 - `funcomputer/install/core_server.py`：`config_all()` / `config_ssh()`，同样是从 Google Drive 恢复个人配置
 

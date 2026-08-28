@@ -1,5 +1,5 @@
 from funcomputer.run import run_cmd
-from notetool.tool.log import log
+from funtool.tool.log import log
 logger = log(name="config")
 
 def config_all():
@@ -41,7 +41,7 @@ def config_workspace():
     run_cmd("cp -rf '/content/gdrive/My Drive/core/configs/core/settings.json' '/root/workspace/.vscode/'")
 
     run_cmd(["cd /root/workspace",
-    "git clone git@github.com:notechats/notetool.git",
+    "git clone git@github.com:farfarfun/funtool.git",
     "git clone git@github.com:notechats/notekeras.git",
     "git clone git@github.com:notechats/notedrive.git",
     "git clone git@github.com:notechats/notecomputer.git"
