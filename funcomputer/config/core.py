@@ -1,4 +1,4 @@
-from notecomputer.core import run_cmd
+from funcomputer.core import run_cmd
 
 
 def config_all():

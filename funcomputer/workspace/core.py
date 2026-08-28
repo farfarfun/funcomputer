@@ -1,4 +1,4 @@
-from notecomputer.run import run_cmd
+from funcomputer.run import run_cmd
 
 def init():
     run_cmd("mkdir -vp /root/workspace")

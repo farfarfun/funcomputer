@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-name=notecomputer
+name=funcomputer
 echo $name
 
 if [ "$1" = "build" ]; then

@@ -1,7 +1,7 @@
 [project]
-name = "notecomputer"
+name = "funcomputer"
 version = "0.0.2"
-description = "notecomputer"
+description = "funcomputer"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
@@ -21,4 +21,4 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["notecomputer"]
+packages = ["funcomputer"]

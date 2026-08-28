@@ -1,4 +1,4 @@
-from notecomputer.run import run_cmd
+from funcomputer.run import run_cmd
 from notetool.tool.log import log
 logger = log(name="config")
 

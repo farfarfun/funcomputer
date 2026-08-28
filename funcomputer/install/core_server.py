@@ -1,6 +1,6 @@
 import os
 
-from notecomputer.run import run_cmd
+from funcomputer.run import run_cmd
 
 config_dir = '/root/configs/'
 
