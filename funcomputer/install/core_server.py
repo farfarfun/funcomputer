@@ -35,11 +35,20 @@ def install_natapp():
     
 
 def start_code_server(user_data_dir="/root/workspace"):
+    password = os.environ.get("CODE_SERVER_PASSWORD")
+    if not password:
+        raise ValueError(
+            "code-server password not provided -- set the CODE_SERVER_PASSWORD "
+            "environment variable (refusing to start with --auth none, which "
+            "exposes an unauthenticated remote-code-execution endpoint)"
+        )
+    os.environ["PASSWORD"] = password
+
     run_cmd("mkdir -vp /root/logs/code-server/")
     cmd = " nohup code-server"
     if user_data_dir is not None:
         cmd += " --user-data-dir "+user_data_dir
-    cmd += " --auth none"
+    cmd += " --auth password"
     cmd += " --config {}code/code-server.yaml".format(config_dir)
     cmd += " >>/root/logs/code-server/code-server.log 2>&1 &"
     run_cmd(cmd)
