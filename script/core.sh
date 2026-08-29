@@ -8,6 +8,6 @@ mkdir -vp /root/workspace
 
 cd /root/workspace
 git clone git@github.com:farfarfun/funtool.git
-git clone git@github.com:notechats/notekeras.git
-git clone git@github.com:notechats/notedrive.git
-git clone git@github.com:notechats/notecomputer.git
+git clone git@github.com:farfarfun/funkeras.git
+git clone git@github.com:farfarfun/fundrive.git
+git clone git@github.com:farfarfun/funcomputer.git
