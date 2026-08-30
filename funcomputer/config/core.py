@@ -1,4 +1,4 @@
-from funcomputer.core import run_cmd
+from funcomputer.run import run_cmd
 
 
 def config_all():
