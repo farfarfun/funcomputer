@@ -1,5 +1,4 @@
 import os
-from typing import Optional
 
 from funcomputer.run import run_cmd
 
@@ -64,8 +63,12 @@ def install_natapp() -> None:
     run_cmd("chmod a+x natapp")
 
 
-def start_code_server(user_data_dir: Optional[str] = "/root/workspace") -> None:
-    """后台启动 code-server。
+def start_code_server(user_data_dir: str | None = "/root/workspace") -> None:
+    """前台启动 code-server。
+
+    本函数只负责拼出并执行前台命令，不做后台化（nohup/&）也不写日志文件；
+    后台运行、PID 记录与日志重定向统一由 `scripts/setup.sh start code-server` 负责，
+    日志/PID 文件落在仓库的 `.run/` 目录下（符合 SPEC.md 6.1 运行时文件约束）。
 
     Args:
         user_data_dir: code-server 的用户数据目录，传 None 则不指定。
@@ -82,18 +85,19 @@ def start_code_server(user_data_dir: Optional[str] = "/root/workspace") -> None:
         )
     os.environ["PASSWORD"] = password
 
-    run_cmd("mkdir -vp /root/logs/code-server/")
-    cmd = " nohup code-server"
+    cmd = "code-server"
     if user_data_dir is not None:
         cmd += " --user-data-dir " + user_data_dir
     cmd += " --auth password"
     cmd += " --config {}code/code-server.yaml".format(config_dir)
-    cmd += " >>/root/logs/code-server/code-server.log 2>&1 &"
     run_cmd(cmd)
 
 
-def start_natapp(authtoken: Optional[str] = None) -> None:
-    """后台启动 natapp 内网穿透。
+def start_natapp(authtoken: str | None = None) -> None:
+    """前台启动 natapp 内网穿透。
+
+    与 `start_code_server` 一样只负责前台执行命令本身，后台化/PID/日志统一交给
+    `scripts/setup.sh start natapp` 处理。
 
     Args:
         authtoken: natapp 的 authtoken，不传则读取 `NATAPP_AUTH_TOKEN` 环境变量。
@@ -107,9 +111,4 @@ def start_natapp(authtoken: Optional[str] = None) -> None:
             "natapp authtoken not provided -- pass authtoken= explicitly or "
             "set the NATAPP_AUTH_TOKEN environment variable"
         )
-    run_cmd("mkdir -vp /root/logs/natapp/")
-    run_cmd(
-        "nohup ./natapp -authtoken={authtoken}  >>/root/logs/natapp/natapp.log 2>&1 &".format(
-            authtoken=authtoken
-        )
-    )
+    run_cmd("./natapp -authtoken={authtoken}".format(authtoken=authtoken))

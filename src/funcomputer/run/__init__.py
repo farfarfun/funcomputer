@@ -1,9 +1,7 @@
-from typing import List, Union
-
 from funshell import run_shell, run_shell_list
 
 
-def run_cmd(cmd: Union[str, List[str]]) -> None:
+def run_cmd(cmd: str | list[str]) -> None:
     """执行 shell 命令。
 
     Args:
