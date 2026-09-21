@@ -89,7 +89,7 @@ def start_code_server(user_data_dir: str | None = "/root/workspace") -> None:
     if user_data_dir is not None:
         cmd += " --user-data-dir " + user_data_dir
     cmd += " --auth password"
-    cmd += " --config {}code/code-server.yaml".format(config_dir)
+    cmd += f" --config {config_dir}code/code-server.yaml"
     run_cmd(cmd)
 
 
@@ -111,4 +111,7 @@ def start_natapp(authtoken: str | None = None) -> None:
             "natapp authtoken not provided -- pass authtoken= explicitly or "
             "set the NATAPP_AUTH_TOKEN environment variable"
         )
-    run_cmd("./natapp -authtoken={authtoken}".format(authtoken=authtoken))
+    # Keep the token out of Python command strings and argv. natapp reads it
+    # from the environment when started this way.
+    os.environ["NATAPP_AUTH_TOKEN"] = authtoken
+    run_cmd('env NATAPP_AUTH_TOKEN="$NATAPP_AUTH_TOKEN" ./natapp')

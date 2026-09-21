@@ -1,6 +1,7 @@
 #!/bin/bash
 # code-server / natapp 两个后台服务的统一生命周期管理入口。
-# 用法: setup.sh {start|stop|restart|run|status} {code-server|natapp} {dev|prod}
+# 用法: setup.sh {start|stop|restart|run} {code-server|natapp} {dev|prod}
+#       setup.sh status [code-server|natapp] [dev|prod]
 #
 # - code-server 依赖环境变量 CODE_SERVER_PASSWORD
 # - natapp 依赖环境变量 NATAPP_AUTH_TOKEN（或在调用 Python 侧显式传参）
@@ -10,17 +11,27 @@ ROOT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 RUN_DIR="$ROOT_DIR/.run"
 
 usage() {
-    echo "用法: $0 {start|stop|restart|run|status} {code-server|natapp} {dev|prod}" >&2
+    echo "用法: $0 {start|stop|restart|run} {code-server|natapp} {dev|prod}" >&2
+    echo "       $0 status [code-server|natapp] [dev|prod]" >&2
     exit 1
 }
 
-pid_file() { echo "$RUN_DIR/$1.pid"; }
-log_file() { echo "$RUN_DIR/$1.log"; }
+pid_file() { echo "$RUN_DIR/$1-$2.pid"; }
+log_file() { echo "$RUN_DIR/$1-$2.log"; }
+
+pid_matches() {
+    local service="$1" env="$2" pid="$3" cmdline
+    [ -r "/proc/$pid/cmdline" ] || return 1
+    cmdline=$(tr '\0' ' ' <"/proc/$pid/cmdline")
+    [[ "$cmdline" == *"start_cmd '$service' '$env'"* ]]
+}
 
 is_running() {
-    local f
-    f="$(pid_file "$1")"
-    [ -f "$f" ] && kill -0 "$(cat "$f")" 2>/dev/null
+    local f pid
+    f="$(pid_file "$1" "$2")"
+    [ -f "$f" ] || return 1
+    pid=$(cat "$f")
+    kill -0 "$pid" 2>/dev/null && pid_matches "$1" "$2" "$pid"
 }
 
 check_prod_installed() {
@@ -77,30 +88,32 @@ do_start() {
     local service="$1"
     local env="$2"
     mkdir -p "$RUN_DIR"
-    if is_running "$service"; then
-        echo "$service 已在运行 (pid $(cat "$(pid_file "$service")"))" >&2
+    if is_running "$service" "$env"; then
+        echo "$service[$env] 已在运行 (pid $(cat "$(pid_file "$service" "$env")"))" >&2
         exit 1
     fi
+    rm -f "$(pid_file "$service" "$env")"
     # nohup 起的是一个全新的 bash 进程，不会继承当前 shell 里的变量/函数，
     # 必须显式 export，否则子进程里 ROOT_DIR 为空；CODE_SERVER_PASSWORD/
     # NATAPP_AUTH_TOKEN 等环境变量本身会随进程环境自动继承，无需额外处理。
     export ROOT_DIR
     export -f start_cmd check_prod_installed
-    nohup bash -c "start_cmd '$service' '$env'" >"$(log_file "$service")" 2>&1 &
-    echo $! > "$(pid_file "$service")"
-    echo "$service 已在后台启动 (env=$env, pid $(cat "$(pid_file "$service")"))"
+    nohup bash -c "start_cmd '$service' '$env'" >"$(log_file "$service" "$env")" 2>&1 &
+    echo $! > "$(pid_file "$service" "$env")"
+    echo "$service[$env] 已在后台启动 (pid $(cat "$(pid_file "$service" "$env")"))"
 }
 
 do_stop() {
     local service="$1"
-    if ! is_running "$service"; then
-        echo "$service 未在运行" >&2
-        rm -f "$(pid_file "$service")"
+    local env="$2"
+    if ! is_running "$service" "$env"; then
+        echo "$service[$env] 未在运行"
+        rm -f "$(pid_file "$service" "$env")"
         return
     fi
-    kill "$(cat "$(pid_file "$service")")"
-    rm -f "$(pid_file "$service")"
-    echo "$service 已停止"
+    kill "$(cat "$(pid_file "$service" "$env")")"
+    rm -f "$(pid_file "$service" "$env")"
+    echo "$service[$env] 已停止"
 }
 
 do_run() {
@@ -111,29 +124,46 @@ do_run() {
 }
 
 do_status() {
-    local service="$1"
-    if is_running "$service"; then
-        echo "$service 运行中 (pid $(cat "$(pid_file "$service")"))"
+    local service="$1" env="$2"
+    if is_running "$service" "$env"; then
+        echo "$service[$env] 运行中 (pid $(cat "$(pid_file "$service" "$env")"))"
     else
-        echo "$service 未运行"
+        echo "$service[$env] 未运行"
     fi
+}
+
+do_all_status() {
+    local service env
+    for service in code-server natapp; do
+        for env in dev prod; do
+            do_status "$service" "$env"
+        done
+    done
 }
 
 action="${1:-}"
 service="${2:-}"
 env="${3:-}"
 
-case "$service" in
-    code-server|natapp)
+case "$action" in
+    start|stop|restart|run)
+        case "$service" in
+            code-server|natapp) ;;
+            *) usage ;;
+        esac
+        [ "$env" = "dev" ] || [ "$env" = "prod" ] || usage
+        ;;
+    status)
+        if [ -n "$service" ]; then
+            case "$service" in
+                code-server|natapp) ;;
+                *) usage ;;
+            esac
+            [ -z "$env" ] || [ "$env" = "dev" ] || [ "$env" = "prod" ] || usage
+        fi
         ;;
     *)
         usage
-        ;;
-esac
-
-case "$action" in
-    start|stop|restart|run)
-        [ "$env" = "dev" ] || [ "$env" = "prod" ] || usage
         ;;
 esac
 
@@ -142,17 +172,24 @@ case "$action" in
         do_start "$service" "$env"
         ;;
     stop)
-        do_stop "$service"
+        do_stop "$service" "$env"
         ;;
     restart)
-        do_stop "$service" || true
+        do_stop "$service" "$env" || true
         do_start "$service" "$env"
         ;;
     run)
         do_run "$service" "$env"
         ;;
     status)
-        do_status "$service"
+        if [ -z "$service" ]; then
+            do_all_status
+        elif [ -z "$env" ]; then
+            do_status "$service" dev
+            do_status "$service" prod
+        else
+            do_status "$service" "$env"
+        fi
         ;;
     *)
         usage

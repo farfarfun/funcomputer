@@ -25,8 +25,8 @@ pip install -e .
 from funcomputer.install.core_server import install_drive, install_code_server
 from funcomputer.install.config import config_all
 
-install_drive()        # 挂载 Google Drive（需在 Colab 环境中运行）
-config_all()           # 从 Drive 恢复 ssh/git 配置，克隆 fun 系列仓库
+install_drive()  # 挂载 Google Drive（需在 Colab 环境中运行）
+config_all()  # 从 Drive 恢复 ssh/git 配置，克隆 fun 系列仓库
 install_code_server()  # 安装 code-server 及常用插件
 ```
 
@@ -35,8 +35,8 @@ install_code_server()  # 安装 code-server 及常用插件
 ```bash
 export CODE_SERVER_PASSWORD=xxx
 ./scripts/setup.sh start code-server dev
-./scripts/setup.sh status code-server
-./scripts/setup.sh stop code-server
+./scripts/setup.sh status code-server dev
+./scripts/setup.sh stop code-server dev
 ```
 
 natapp 同理，需要先设置 `NATAPP_AUTH_TOKEN` 环境变量：
@@ -46,9 +46,11 @@ export NATAPP_AUTH_TOKEN=xxx
 ./scripts/setup.sh start natapp dev
 ```
 
+不带参数执行 `status` 会以 `service+环境` 维度报告全部状态。
+
 ## 说明
 
-代码中的路径（`/content/gdrive/...`）和 Git 账号邮箱（`funcomputer/install/config.py` 的 `config_git()`）是写死的个人配置，直接搬到其他环境大概率跑不通，需要按自己的情况修改。**natapp token 和 code-server 密码并未硬编码**：`start_natapp()` 从显式参数或 `NATAPP_AUTH_TOKEN` 环境变量读取，`start_code_server()` 要求通过 `CODE_SERVER_PASSWORD` 环境变量提供密码，缺失时会直接抛出异常拒绝启动。项目只有 `tests/test_smoke.py` 一个导入冒烟测试，没有对外发布，属于一次性的个人工具脚本。
+代码中的路径（`/content/gdrive/...`）和 Git 账号邮箱（`funcomputer/install/config.py` 的 `config_git()`）是写死的个人配置，直接搬到其他环境大概率跑不通，需要按自己的情况修改。SSH 私钥和 PyPI 凭据不会从 Drive 复制，SSH 配置需使用 `SSH_AUTH_SOCK` 指向已加载密钥的 agent。**natapp token 和 code-server 密码并未硬编码**：`start_natapp()` 从显式参数或 `NATAPP_AUTH_TOKEN` 环境变量读取，`start_code_server()` 要求通过 `CODE_SERVER_PASSWORD` 环境变量提供密码，缺失时会直接抛出异常拒绝启动。项目只有 `tests/test_smoke.py` 一个导入冒烟测试，没有对外发布，属于一次性的个人工具脚本。
 
 ---
 

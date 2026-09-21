@@ -6,36 +6,30 @@ logger = getLogger("funcomputer.install.config")
 
 
 def config_all() -> None:
-    """依次执行 init/ssh/git/workspace 全部配置步骤，并整体拷贝个人 configs 目录。"""
+    """依次执行工具、git、workspace 配置步骤。"""
     config_init()
     config_ssh()
     config_git()
     config_workspace()
-    run_cmd("cp -rf '/content/gdrive/My Drive/core/configs/' '/root/'")
     logger.info("config all done")
 
 
 def config_init() -> None:
-    """升级 pip，并安装 twine、pyecharts、pylint 等常用工具。"""
-    run_cmd("pip3 install -U pip")
-    run_cmd("pip3 install -U twine")
-    run_cmd("pip3 install -U pyecharts pylint")
+    """使用 uv 安装常用命令行工具。"""
+    run_cmd("uv tool install twine")
+    run_cmd("uv tool install pyecharts")
+    run_cmd("uv tool install pylint")
 
 
 def config_ssh() -> None:
-    """从 Google Drive 恢复 ssh 私钥/公钥和 `.pypirc` 到 `/root/`。"""
-    # run_cmd("cp -r '/root/.ssh' '/content/gdrive/My Drive/core/configs/ssh'")
-    run_cmd("cp -rf '/content/gdrive/My Drive/core/configs/ssh/id_rsa' '/root/.ssh/'")
-    run_cmd("cp -rf '/content/gdrive/My Drive/core/configs/ssh/id_rsa.pub' '/root/.ssh/'")
-    run_cmd("cp -rf '/content/gdrive/My Drive/core/configs/root/.pypirc' '/root/.pypirc'")
+    """使用环境中已配置的 SSH agent，不复制私钥或 PyPI 凭据文件。"""
+    if not __import__("os").environ.get("SSH_AUTH_SOCK"):
+        raise RuntimeError("未配置 SSH agent，请先设置 SSH_AUTH_SOCK")
     logger.info("config ssh done")
 
 
 def config_git() -> None:
     """恢复 ssh key 并写入全局 git 用户名/邮箱。"""
-    run_cmd("cp -rf '/content/gdrive/My Drive/core/configs/ssh/id_rsa' '/root/.ssh/'")
-    run_cmd("cp -rf '/content/gdrive/My Drive/core/configs/ssh/id_rsa.pub' '/root/.ssh/'")
-
     run_cmd('git config --global user.email "1007530194@qq.com"')
     run_cmd('git config --global user.name "niuliangtao"')
     logger.info("config git done")

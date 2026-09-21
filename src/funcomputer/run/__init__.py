@@ -1,4 +1,19 @@
+import os
+
 from funshell import run_shell, run_shell_list
+
+
+def _safe_command(cmd: str | list[str]) -> str | list[str]:
+    """Hide credentials that may be present in a command error."""
+    values = [
+        os.environ.get(name) for name in ("NATAPP_AUTH_TOKEN", "CODE_SERVER_PASSWORD")
+    ]
+    if isinstance(cmd, list):
+        return [_safe_command(item) for item in cmd]
+    for value in values:
+        if value:
+            cmd = cmd.replace(value, "[REDACTED]")
+    return cmd
 
 
 def run_cmd(cmd: str | list[str]) -> None:
@@ -16,4 +31,4 @@ def run_cmd(cmd: str | list[str]) -> None:
     else:
         code = run_shell(cmd)
     if code != "0":
-        raise RuntimeError(f"command failed (exit {code}): {cmd}")
+        raise RuntimeError(f"command failed (exit {code}): {_safe_command(cmd)}")
