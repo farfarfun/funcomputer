@@ -8,10 +8,9 @@ license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "牛哥", email = "farfarfun@qq.com" }]
 dependencies = [
-    "funshell>=1.0",
-    "farlog>=0.1",
-    # funshell 1.0.19 会导入 nltlog，但没有声明该依赖。
-    "nltlog>=1.0",
+    # 1.0.23 起 funshell 自己声明了 farlog，不再隐式 import 已冻结的 nltlog。
+    "funshell>=1.0.23",
+    "farlog>=1.1.7",
 ]
 
 [build-system]

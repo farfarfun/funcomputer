@@ -57,7 +57,9 @@ def test_start_code_server_requires_password(monkeypatch):
 def test_start_code_server_builds_command(user_data_dir, expected, monkeypatch):
     calls = []
     monkeypatch.setenv("CODE_SERVER_PASSWORD", "password")
-    monkeypatch.delenv("PASSWORD", raising=False)
+    # 这里必须用 setenv 占位：被测函数会自己覆写这个变量，只有 monkeypatch 事先
+    # 接管过该键，teardown 才会把它清掉。否则凭据样本会泄漏到整个测试会话的环境里。
+    monkeypatch.setenv("PASSWORD", "placeholder")
     monkeypatch.setattr(core_server, "run_cmd", calls.append)
 
     core_server.start_code_server(user_data_dir)
@@ -75,6 +77,8 @@ def test_start_natapp_requires_token(monkeypatch):
 
 def test_start_natapp_keeps_token_out_of_command(monkeypatch):
     calls = []
+    # 同上：先占位，避免 "secret-token" 留在后续测试的进程环境里。
+    monkeypatch.setenv("NATAPP_AUTH_TOKEN", "placeholder")
     monkeypatch.setattr(core_server, "run_cmd", calls.append)
 
     core_server.start_natapp("secret-token")

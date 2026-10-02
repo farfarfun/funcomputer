@@ -1,3 +1,5 @@
+import os
+
 from farlog import getLogger
 
 from funcomputer.run import run_cmd
@@ -23,7 +25,7 @@ def config_init() -> None:
 
 def config_ssh() -> None:
     """使用环境中已配置的 SSH agent，不复制私钥或 PyPI 凭据文件。"""
-    if not __import__("os").environ.get("SSH_AUTH_SOCK"):
+    if not os.environ.get("SSH_AUTH_SOCK"):
         raise RuntimeError("未配置 SSH agent，请先设置 SSH_AUTH_SOCK")
     logger.info("config ssh done")
 
