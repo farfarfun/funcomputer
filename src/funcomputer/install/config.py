@@ -18,7 +18,7 @@ def config_init() -> None:
     """使用 uv 安装常用命令行工具。"""
     run_cmd("uv tool install twine")
     run_cmd("uv tool install pyecharts")
-    run_cmd("uv tool install pylint")
+    run_cmd("uv tool install ruff")
 
 
 def config_ssh() -> None:
@@ -29,7 +29,7 @@ def config_ssh() -> None:
 
 
 def config_git() -> None:
-    """恢复 ssh key 并写入全局 git 用户名/邮箱。"""
+    """写入全局 git 用户名和邮箱。"""
     run_cmd('git config --global user.email "1007530194@qq.com"')
     run_cmd('git config --global user.name "niuliangtao"')
     logger.info("config git done")

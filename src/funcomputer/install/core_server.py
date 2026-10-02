@@ -111,7 +111,6 @@ def start_natapp(authtoken: str | None = None) -> None:
             "natapp authtoken not provided -- pass authtoken= explicitly or "
             "set the NATAPP_AUTH_TOKEN environment variable"
         )
-    # Keep the token out of Python command strings and argv. natapp reads it
-    # from the environment when started this way.
+    # 不把 token 放进 Python 命令字符串或 argv；natapp 会从环境变量读取。
     os.environ["NATAPP_AUTH_TOKEN"] = authtoken
     run_cmd('env NATAPP_AUTH_TOKEN="$NATAPP_AUTH_TOKEN" ./natapp')

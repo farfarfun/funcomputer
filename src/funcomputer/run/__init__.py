@@ -4,7 +4,7 @@ from funshell import run_shell, run_shell_list
 
 
 def _safe_command(cmd: str | list[str]) -> str | list[str]:
-    """Hide credentials that may be present in a command error."""
+    """隐藏命令错误信息中可能存在的凭据。"""
     values = [
         os.environ.get(name) for name in ("NATAPP_AUTH_TOKEN", "CODE_SERVER_PASSWORD")
     ]
