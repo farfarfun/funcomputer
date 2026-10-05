@@ -21,23 +21,51 @@ def test_install_drive_mounts_expected_path(monkeypatch):
 
 def test_install_code_server_installs_server_and_extensions(monkeypatch):
     calls = []
+    downloads = []
     monkeypatch.setattr(core_server, "run_cmd", calls.append)
+    monkeypatch.setattr(
+        core_server,
+        "download",
+        lambda url, path, overwrite: downloads.append((url, path, overwrite)) or True,
+    )
 
     core_server.install_code_server()
 
-    assert calls[0] == "curl -fsSL https://code-server.dev/install.sh | sh"
+    assert downloads[0][0] == "https://code-server.dev/install.sh"
+    assert downloads[0][2] is True
+    assert calls[0].startswith("sh ")
     assert len(calls) == 13
     assert all("--install-extension" in command for command in calls[1:])
 
 
 def test_install_natapp_downloads_and_marks_executable(monkeypatch):
     calls = []
+    downloads = []
     monkeypatch.setattr(core_server, "run_cmd", calls.append)
+    monkeypatch.setattr(
+        core_server,
+        "download",
+        lambda url, path, overwrite: downloads.append((url, path, overwrite)) or True,
+    )
 
     core_server.install_natapp()
 
-    assert calls[0].startswith("wget http://download.natapp.cn/")
-    assert calls[1] == "chmod a+x natapp"
+    assert downloads == [
+        (
+            "https://download.natapp.cn/assets/downloads/clients/2_3_9/natapp_linux_amd64/natapp",
+            "natapp",
+            True,
+        )
+    ]
+    assert calls == ["chmod a+x natapp"]
+
+
+@pytest.mark.parametrize("installer", ["code-server", "natapp"])
+def test_install_raises_when_download_fails(monkeypatch, installer):
+    monkeypatch.setattr(core_server, "download", lambda *args, **kwargs: False)
+
+    with pytest.raises(RuntimeError, match="下载"):
+        getattr(core_server, f"install_{installer.replace('-', '_')}")()
 
 
 def test_start_code_server_requires_password(monkeypatch):

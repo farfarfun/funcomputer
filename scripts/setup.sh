@@ -26,12 +26,18 @@ pid_matches() {
     [[ "$cmdline" == *"start_cmd '$service' '$env'"* ]]
 }
 
-is_running() {
+pid_file_state() {
     local f pid
     f="$(pid_file "$1" "$2")"
     [ -f "$f" ] || return 1
     pid=$(cat "$f")
-    kill -0 "$pid" 2>/dev/null && pid_matches "$1" "$2" "$pid"
+    [[ "$pid" =~ ^[1-9][0-9]*$ ]] || return 2
+    kill -0 "$pid" 2>/dev/null && pid_matches "$1" "$2" "$pid" && return 0
+    return 2
+}
+
+is_running() {
+    pid_file_state "$1" "$2"
 }
 
 check_prod_installed() {
@@ -90,13 +96,18 @@ start_cmd() {
 do_start() {
     local service="$1"
     local env="$2"
-    local f pid i
+    local f pid i state
     mkdir -p "$RUN_DIR"
-    if is_running "$service" "$env"; then
+    if pid_file_state "$service" "$env"; then
         echo "$service[$env] 已在运行 (pid $(cat "$(pid_file "$service" "$env")"))" >&2
         exit 1
+    else
+        state=$?
     fi
     f="$(pid_file "$service" "$env")"
+    if [ "$state" -eq 2 ]; then
+        echo "$service[$env] 检测到陈旧 PID 文件，正在清理: $f" >&2
+    fi
     rm -f "$f"
     # nohup 起的是一个全新的 bash 进程，不会继承当前 shell 里的变量/函数，
     # 必须显式 export，否则子进程里 ROOT_DIR 为空；CODE_SERVER_PASSWORD/
@@ -118,9 +129,19 @@ do_start() {
     done
     if [ ! -s "$f" ]; then
         echo "$service[$env] 启动失败：未能记录 pid，详见 $(log_file "$service" "$env")" >&2
-        exit 1
+        return 1
     fi
     pid=$(cat "$f")
+    # PID 文件写入并不代表服务成功启动：例如 prod 校验会在写入 PID 后立刻失败。
+    # 在短暂窗口内确认包装进程仍在运行，避免向调用方错误报告成功。
+    for i in 1 2 3 4 5 6 7 8 9 10; do
+        if ! is_running "$service" "$env"; then
+            rm -f "$f"
+            echo "$service[$env] 启动失败：进程提前退出，详见 $(log_file "$service" "$env")" >&2
+            return 1
+        fi
+        sleep 0.1
+    done
     echo "$service[$env] 已在后台启动 (pid $pid)"
 }
 
