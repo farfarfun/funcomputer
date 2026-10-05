@@ -4,6 +4,26 @@
 
 ### 新增
 
+（无）
+
+### 修复
+
+- `scripts/setup.sh start` 会在报告成功前确认后台进程仍存活；初始化立即失败时清理 PID 文件并以非 0 退出。
+- `scripts/setup.sh start` 会明确报告并清理陈旧 PID 文件。
+- code-server 安装脚本和 natapp 客户端均通过 `funget` 从 HTTPS 地址下载；下载失败时停止安装。
+
+### 变更
+
+- 项目元信息使用与 GitHub 一致的功能描述；因 `funget>=1.1.69` 的运行时要求，Python 最低版本调整为 3.12。
+
+### 废弃
+
+（无）
+
+## 0.0.2
+
+### 新增
+
 - 依赖补充版本下限，新增 `uv.lock` 保证可复现构建。
 - `scripts/setup.sh`：code-server / natapp 的统一生命周期管理入口，负责后台化、PID 文件与日志重定向，运行时文件落在 `.run/`。
 - `tests/` 按公开 API 补齐正常路径、参数边界与失败路径测试（`run_cmd`、`config_*`、`install_*`、`start_*`、setup.sh 生命周期），外部命令与 Colab 依赖全部用 mock 或假可执行文件隔离。

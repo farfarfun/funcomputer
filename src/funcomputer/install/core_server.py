@@ -1,4 +1,8 @@
 import os
+import shlex
+import tempfile
+
+from funget import download
 
 from funcomputer.run import run_cmd
 
@@ -14,7 +18,19 @@ def install_drive() -> None:
 
 def install_code_server() -> None:
     """安装 code-server，并装一批常用 VSCode 插件。"""
-    run_cmd("curl -fsSL https://code-server.dev/install.sh | sh")
+    with tempfile.NamedTemporaryFile(
+        suffix="-code-server-install.sh", delete=False
+    ) as f:
+        installer_path = f.name
+    try:
+        if not download(
+            "https://code-server.dev/install.sh", installer_path, overwrite=True
+        ):
+            raise RuntimeError("下载 code-server 安装脚本失败")
+        run_cmd(f"sh {shlex.quote(installer_path)}")
+    finally:
+        if os.path.exists(installer_path):
+            os.unlink(installer_path)
 
     # run_cmd("code-server --config /root/configs/code/code-server.yaml --install-extension ")
     run_cmd(
@@ -57,9 +73,12 @@ def install_code_server() -> None:
 
 def install_natapp() -> None:
     """下载 natapp 内网穿透客户端并赋予可执行权限。"""
-    run_cmd(
-        "wget http://download.natapp.cn/assets/downloads/clients/2_3_9/natapp_linux_amd64/natapp -O natapp"
-    )
+    if not download(
+        "https://download.natapp.cn/assets/downloads/clients/2_3_9/natapp_linux_amd64/natapp",
+        "natapp",
+        overwrite=True,
+    ):
+        raise RuntimeError("下载 natapp 客户端失败")
     run_cmd("chmod a+x natapp")
 
 

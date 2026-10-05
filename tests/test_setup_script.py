@@ -77,7 +77,8 @@ def test_start_prod_refuses_to_run_repo_source(clean_run_dir):
     """
     result = run_setup("start", "code-server", "prod")
 
-    assert result.returncode == 0, result.stderr
+    assert result.returncode == 1, result.stderr
+    assert "启动失败：进程提前退出" in result.stderr
     log = clean_run_dir / "code-server-prod.log"
     for _ in range(50):
         if log.is_file() and log.read_text():
@@ -92,6 +93,29 @@ def test_start_prod_refuses_to_run_repo_source(clean_run_dir):
     assert run_setup("status", "code-server", "prod").stdout.strip() == (
         "code-server[prod] 未运行"
     )
+    assert not (clean_run_dir / "code-server-prod.pid").exists()
+
+
+def test_start_reports_and_replaces_stale_pid_file(clean_run_dir, tmp_path):
+    pid_file = clean_run_dir / "code-server-dev.pid"
+    clean_run_dir.mkdir()
+    pid_file.write_text("999999\n")
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    fake_server = fake_bin / "code-server"
+    fake_server.write_text("#!/bin/sh\nexec sleep 300\n")
+    fake_server.chmod(0o755)
+    env = dict(os.environ)
+    env["PATH"] = f"{fake_bin}{os.pathsep}{env['PATH']}"
+    env["CODE_SERVER_PASSWORD"] = "test-password"
+
+    result = run_setup("start", "code-server", "dev", env=env)
+
+    try:
+        assert result.returncode == 0, result.stderr
+        assert "检测到陈旧 PID 文件" in result.stderr
+    finally:
+        run_setup("stop", "code-server", "dev")
 
 
 def test_stop_kills_the_whole_service_process_tree(tmp_path, clean_run_dir):
