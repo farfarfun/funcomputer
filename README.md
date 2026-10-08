@@ -17,7 +17,7 @@ uv sync --dev
 - `src/funcomputer/install/config.py`：`config_all()` / `config_init()` / `config_ssh()` / `config_git()` / `config_workspace()`，检查 SSH agent、配置 git 用户名邮箱，并把 `funtool`、`funkeras`、`fundrive`、`funcomputer` 克隆到 `/root/workspace`
 - `src/funcomputer/install/core_server.py`：`install_drive()` 挂载 Google Drive；`install_code_server()` 安装 code-server 并装一批 VSCode 插件；`start_code_server()` / `start_natapp()` 前台执行启动 code-server / natapp 内网穿透的命令本身（不做后台化）
 - `src/funcomputer/workspace/core.py`：`init()`，创建 `/root/workspace` 并克隆 fun 系列仓库
-- `scripts/setup.sh`：code-server / natapp 的统一生命周期管理入口（`start`/`stop`/`restart`/`run`/`status`，区分 `dev`/`prod`），负责后台化、PID 文件与日志重定向，运行时文件落在 `.run/` 下。服务用 `setsid` 起在独立进程组里，`stop` 按进程组回收，不会留下孤儿进程；`prod` 必须跑已安装的正式包，检测到从本仓库源码加载会直接拒绝启动
+- `scripts/setup.sh`：code-server / natapp 的统一生命周期管理入口（`start`/`stop`/`restart`/`run`/`status`），负责后台化、PID 文件与日志重定向，运行时文件落在 `.run/` 下。服务用 `setsid` 起在独立进程组里，`stop` 按进程组回收，不会留下孤儿进程
 
 ## 用法示例
 
@@ -34,19 +34,20 @@ install_code_server()  # 安装 code-server 及常用插件
 
 ```bash
 export CODE_SERVER_PASSWORD=xxx
-./scripts/setup.sh start code-server dev
-./scripts/setup.sh status code-server dev
-./scripts/setup.sh stop code-server dev
+./scripts/setup.sh start code-server
+./scripts/setup.sh status code-server
+./scripts/setup.sh stop code-server
 ```
 
 natapp 同理，需要先设置 `NATAPP_AUTH_TOKEN` 环境变量：
 
 ```bash
 export NATAPP_AUTH_TOKEN=xxx
-./scripts/setup.sh start natapp dev
+./scripts/setup.sh start natapp
 ```
 
-不带参数执行 `status` 会以 `service+环境` 维度报告全部状态。
+不指定服务执行 `status` 会报告两个服务的状态。运行命令不再接受无效的
+`dev`/`prod` 参数；本仓库没有发布正式包，只有 README 安装章节所述的源码模式。
 
 ## 说明
 

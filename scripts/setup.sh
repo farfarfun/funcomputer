@@ -1,7 +1,7 @@
 #!/bin/bash
 # code-server / natapp 两个后台服务的统一生命周期管理入口。
-# 用法: setup.sh {start|stop|restart|run} {code-server|natapp} {dev|prod}
-#       setup.sh status [code-server|natapp] [dev|prod]
+# 用法: setup.sh {start|stop|restart|run} {code-server|natapp}
+#       setup.sh status [code-server|natapp]
 #
 # - code-server 依赖环境变量 CODE_SERVER_PASSWORD
 # - natapp 依赖环境变量 NATAPP_AUTH_TOKEN（或在调用 Python 侧显式传参）
@@ -11,63 +11,37 @@ ROOT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 RUN_DIR="$ROOT_DIR/.run"
 
 usage() {
-    echo "用法: $0 {start|stop|restart|run} {code-server|natapp} {dev|prod}" >&2
-    echo "       $0 status [code-server|natapp] [dev|prod]" >&2
+    echo "用法: $0 {start|stop|restart|run} {code-server|natapp}" >&2
+    echo "       $0 status [code-server|natapp]" >&2
     exit 1
 }
 
-pid_file() { echo "$RUN_DIR/$1-$2.pid"; }
-log_file() { echo "$RUN_DIR/$1-$2.log"; }
+pid_file() { echo "$RUN_DIR/$1.pid"; }
+log_file() { echo "$RUN_DIR/$1.log"; }
 
 pid_matches() {
-    local service="$1" env="$2" pid="$3" cmdline
+    local service="$1" pid="$2" cmdline
     [ -r "/proc/$pid/cmdline" ] || return 1
     cmdline=$(tr '\0' ' ' <"/proc/$pid/cmdline")
-    [[ "$cmdline" == *"start_cmd '$service' '$env'"* ]]
+    [[ "$cmdline" == *"start_cmd '$service'"* ]]
 }
 
 pid_file_state() {
     local f pid
-    f="$(pid_file "$1" "$2")"
+    f="$(pid_file "$1")"
     [ -f "$f" ] || return 1
     pid=$(cat "$f")
     [[ "$pid" =~ ^[1-9][0-9]*$ ]] || return 2
-    kill -0 "$pid" 2>/dev/null && pid_matches "$1" "$2" "$pid" && return 0
+    kill -0 "$pid" 2>/dev/null && pid_matches "$1" "$pid" && return 0
     return 2
 }
 
 is_running() {
-    pid_file_state "$1" "$2"
-}
-
-check_prod_installed() {
-    # prod 只能跑已安装的正式包，不能回退到本仓库源码；
-    # 通过比对 funcomputer 包的实际加载路径是否落在本仓库目录内来判断。
-    python3 - "$ROOT_DIR" <<'PYEOF'
-import os
-import sys
-
-root_dir = os.path.realpath(sys.argv[1])
-try:
-    import funcomputer
-except ImportError:
-    print("error: 未安装 funcomputer 正式包，请先 pip install funcomputer（或 uv pip install funcomputer）", file=sys.stderr)
-    sys.exit(1)
-
-pkg_path = os.path.realpath(funcomputer.__file__)
-if pkg_path.startswith(root_dir + os.sep):
-    print(
-        "error: 当前 funcomputer 是从本仓库源码目录加载的（{}），".format(pkg_path)
-        + "prod 模式禁止直接跑源码，请先安装正式发布包",
-        file=sys.stderr,
-    )
-    sys.exit(1)
-PYEOF
+    pid_file_state "$1"
 }
 
 start_cmd() {
     local service="$1"
-    local env="$2"
     local py_code
     case "$service" in
         code-server)
@@ -80,33 +54,22 @@ start_cmd() {
             usage
             ;;
     esac
-    if [ "$env" = "prod" ]; then
-        # 必须显式 `|| exit 1`：do_start 用 `nohup bash -c ...` 起的是一个全新的
-        # shell，它不会继承本脚本顶部的 `set -e`，所以只写 `check_prod_installed`
-        # 的话校验失败后仍然会继续往下跑 python3，prod 校验等于被架空（实测过）。
-        check_prod_installed || exit 1
-        python3 -c "$py_code"
-    else
-        # dev 模式强制优先加载本仓库 src/ 下的源码，避免被系统/全局环境里
-        # 恰好装着的其它 funcomputer 版本掩盖，保证跑的就是本地改动。
-        (cd "$ROOT_DIR" && PYTHONPATH="$ROOT_DIR/src${PYTHONPATH:+:$PYTHONPATH}" python3 -c "$py_code")
-    fi
+    (cd "$ROOT_DIR" && PYTHONPATH="$ROOT_DIR/src${PYTHONPATH:+:$PYTHONPATH}" python3 -c "$py_code")
 }
 
 do_start() {
     local service="$1"
-    local env="$2"
     local f pid i state
     mkdir -p "$RUN_DIR"
-    if pid_file_state "$service" "$env"; then
-        echo "$service[$env] 已在运行 (pid $(cat "$(pid_file "$service" "$env")"))" >&2
+    if pid_file_state "$service"; then
+        echo "$service 已在运行 (pid $(cat "$(pid_file "$service")"))" >&2
         exit 1
     else
         state=$?
     fi
-    f="$(pid_file "$service" "$env")"
+    f="$(pid_file "$service")"
     if [ "$state" -eq 2 ]; then
-        echo "$service[$env] 检测到陈旧 PID 文件，正在清理: $f" >&2
+        echo "$service 检测到陈旧 PID 文件，正在清理: $f" >&2
     fi
     rm -f "$f"
     # nohup 起的是一个全新的 bash 进程，不会继承当前 shell 里的变量/函数，
@@ -114,35 +77,34 @@ do_start() {
     # NATAPP_AUTH_TOKEN 等环境变量本身会随进程环境自动继承，无需额外处理。
     # usage 也要 export：start_cmd 的兜底分支会调用它。
     export ROOT_DIR
-    export -f start_cmd check_prod_installed usage
+    export -f start_cmd usage
     # setsid 让服务自成一个会话/进程组，这样 do_stop 可以 `kill -- -PGID`
     # 一次带走 bash 包装层 + python 解释器 + 底下真正的 code-server/natapp。
     # 只 kill 包装层 PID 的话，真正的服务会被 reparent 成孤儿继续运行，
     # 而脚本已经打印了「已停止」（实测过，对无认证 code-server 尤其危险）。
     # pid 由包装层自己写 $$：setsid 在自身已是进程组首进程时会先 fork，
     # 那种情况下 $! 拿到的是 setsid 而不是 bash，不能依赖 $!。
-    setsid nohup bash -c "echo \$\$ >'$f'; start_cmd '$service' '$env'" \
-        >"$(log_file "$service" "$env")" 2>&1 &
+    setsid nohup bash -c "echo \$\$ >'$f'; start_cmd '$service'" \
+        >"$(log_file "$service")" 2>&1 &
     for i in 1 2 3 4 5 6 7 8 9 10; do
         [ -s "$f" ] && break
         sleep 0.1
     done
     if [ ! -s "$f" ]; then
-        echo "$service[$env] 启动失败：未能记录 pid，详见 $(log_file "$service" "$env")" >&2
+        echo "$service 启动失败：未能记录 pid，详见 $(log_file "$service")" >&2
         return 1
     fi
     pid=$(cat "$f")
-    # PID 文件写入并不代表服务成功启动：例如 prod 校验会在写入 PID 后立刻失败。
-    # 在短暂窗口内确认包装进程仍在运行，避免向调用方错误报告成功。
+    # PID 文件写入并不代表服务成功启动；短暂确认包装进程仍在运行。
     for i in 1 2 3 4 5 6 7 8 9 10; do
-        if ! is_running "$service" "$env"; then
+        if ! is_running "$service"; then
             rm -f "$f"
-            echo "$service[$env] 启动失败：进程提前退出，详见 $(log_file "$service" "$env")" >&2
+            echo "$service 启动失败：进程提前退出，详见 $(log_file "$service")" >&2
             return 1
         fi
         sleep 0.1
     done
-    echo "$service[$env] 已在后台启动 (pid $pid)"
+    echo "$service 已在后台启动 (pid $pid)"
 }
 
 # 打印 pid 所在的进程组号；仅当进程组首进程就是 pid 本身时才输出，
@@ -156,11 +118,10 @@ own_pgid() {
 
 do_stop() {
     local service="$1"
-    local env="$2"
     local f pid pgid i
-    f="$(pid_file "$service" "$env")"
-    if ! is_running "$service" "$env"; then
-        echo "$service[$env] 未在运行"
+    f="$(pid_file "$service")"
+    if ! is_running "$service"; then
+        echo "$service 未在运行"
         rm -f "$f"
         return
     fi
@@ -184,37 +145,34 @@ do_stop() {
         fi
     fi
     rm -f "$f"
-    echo "$service[$env] 已停止"
+    echo "$service 已停止"
 }
 
 do_run() {
     local service="$1"
-    local env="$2"
     mkdir -p "$RUN_DIR"
-    start_cmd "$service" "$env"
+    start_cmd "$service"
 }
 
 do_status() {
-    local service="$1" env="$2"
-    if is_running "$service" "$env"; then
-        echo "$service[$env] 运行中 (pid $(cat "$(pid_file "$service" "$env")"))"
+    local service="$1"
+    if is_running "$service"; then
+        echo "$service 运行中 (pid $(cat "$(pid_file "$service")"))"
     else
-        echo "$service[$env] 未运行"
+        echo "$service 未运行"
     fi
 }
 
 do_all_status() {
-    local service env
+    local service
     for service in code-server natapp; do
-        for env in dev prod; do
-            do_status "$service" "$env"
-        done
+        do_status "$service"
     done
 }
 
 action="${1:-}"
 service="${2:-}"
-env="${3:-}"
+[ "$#" -le 2 ] || usage
 
 case "$action" in
     start|stop|restart|run)
@@ -222,7 +180,6 @@ case "$action" in
             code-server|natapp) ;;
             *) usage ;;
         esac
-        [ "$env" = "dev" ] || [ "$env" = "prod" ] || usage
         ;;
     status)
         if [ -n "$service" ]; then
@@ -230,7 +187,6 @@ case "$action" in
                 code-server|natapp) ;;
                 *) usage ;;
             esac
-            [ -z "$env" ] || [ "$env" = "dev" ] || [ "$env" = "prod" ] || usage
         fi
         ;;
     *)
@@ -240,26 +196,23 @@ esac
 
 case "$action" in
     start)
-        do_start "$service" "$env"
+        do_start "$service"
         ;;
     stop)
-        do_stop "$service" "$env"
+        do_stop "$service"
         ;;
     restart)
-        do_stop "$service" "$env" || true
-        do_start "$service" "$env"
+        do_stop "$service" || true
+        do_start "$service"
         ;;
     run)
-        do_run "$service" "$env"
+        do_run "$service"
         ;;
     status)
         if [ -z "$service" ]; then
             do_all_status
-        elif [ -z "$env" ]; then
-            do_status "$service" dev
-            do_status "$service" prod
         else
-            do_status "$service" "$env"
+            do_status "$service"
         fi
         ;;
     *)

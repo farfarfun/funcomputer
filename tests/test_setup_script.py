@@ -24,15 +24,13 @@ def run_setup(*args, env=None):
     )
 
 
-def test_status_reports_every_service_and_environment():
+def test_status_reports_every_service():
     result = run_setup("status")
 
     assert result.returncode == 0
     assert result.stdout.splitlines() == [
-        "code-server[dev] 未运行",
-        "code-server[prod] 未运行",
-        "natapp[dev] 未运行",
-        "natapp[prod] 未运行",
+        "code-server 未运行",
+        "natapp 未运行",
     ]
 
 
@@ -40,17 +38,15 @@ def test_status_can_filter_service():
     result = run_setup("status", "natapp")
 
     assert result.returncode == 0
-    assert result.stdout.splitlines() == [
-        "natapp[dev] 未运行",
-        "natapp[prod] 未运行",
-    ]
+    assert result.stdout.strip() == "natapp 未运行"
 
 
 def test_invalid_arguments_show_usage():
-    result = run_setup("start", "unknown", "dev")
+    result = run_setup("start", "unknown")
 
     assert result.returncode == 1
     assert "用法:" in result.stderr
+    assert run_setup("start", "code-server", "dev").returncode == 1
 
 
 def _pid_alive(pid: int) -> bool:
@@ -69,35 +65,8 @@ def clean_run_dir():
     shutil.rmtree(RUN_DIR, ignore_errors=True)
 
 
-def test_start_prod_refuses_to_run_repo_source(clean_run_dir):
-    """prod 校验失败后必须真正中止，不能继续把源码跑起来。
-
-    回归用例：`nohup bash -c` 起的是新 shell，不继承脚本顶部的 `set -e`，
-    早先只写 `check_prod_installed` 导致校验失败也照样执行 python3。
-    """
-    result = run_setup("start", "code-server", "prod")
-
-    assert result.returncode == 1, result.stderr
-    assert "启动失败：进程提前退出" in result.stderr
-    log = clean_run_dir / "code-server-prod.log"
-    for _ in range(50):
-        if log.is_file() and log.read_text():
-            break
-        time.sleep(0.1)
-
-    content = log.read_text()
-    assert "prod 模式禁止直接跑源码" in content
-    # 校验生效的标志：日志里只有校验错误，没有 start_code_server 真正执行留下的痕迹。
-    assert "start_code_server" not in content
-    assert "Traceback" not in content
-    assert run_setup("status", "code-server", "prod").stdout.strip() == (
-        "code-server[prod] 未运行"
-    )
-    assert not (clean_run_dir / "code-server-prod.pid").exists()
-
-
 def test_start_reports_and_replaces_stale_pid_file(clean_run_dir, tmp_path):
-    pid_file = clean_run_dir / "code-server-dev.pid"
+    pid_file = clean_run_dir / "code-server.pid"
     clean_run_dir.mkdir()
     pid_file.write_text("999999\n")
     fake_bin = tmp_path / "bin"
@@ -109,13 +78,13 @@ def test_start_reports_and_replaces_stale_pid_file(clean_run_dir, tmp_path):
     env["PATH"] = f"{fake_bin}{os.pathsep}{env['PATH']}"
     env["CODE_SERVER_PASSWORD"] = "test-password"
 
-    result = run_setup("start", "code-server", "dev", env=env)
+    result = run_setup("start", "code-server", env=env)
 
     try:
         assert result.returncode == 0, result.stderr
         assert "检测到陈旧 PID 文件" in result.stderr
     finally:
-        run_setup("stop", "code-server", "dev")
+        run_setup("stop", "code-server")
 
 
 def test_stop_kills_the_whole_service_process_tree(tmp_path, clean_run_dir):
@@ -134,10 +103,10 @@ def test_stop_kills_the_whole_service_process_tree(tmp_path, clean_run_dir):
     env["PATH"] = f"{fake_bin}{os.pathsep}{env['PATH']}"
     env["CODE_SERVER_PASSWORD"] = "test-password"
 
-    started = run_setup("start", "code-server", "dev", env=env)
+    started = run_setup("start", "code-server", env=env)
     assert started.returncode == 0, started.stderr
 
-    pid_file = clean_run_dir / "code-server-dev.pid"
+    pid_file = clean_run_dir / "code-server.pid"
     pid = int(pid_file.read_text().strip())
 
     # 等整条 bash -> python3 -> sh -> code-server 链路起来
@@ -151,11 +120,11 @@ def test_stop_kills_the_whole_service_process_tree(tmp_path, clean_run_dir):
     # setsid 的效果：整棵树和 pid 同一个进程组，pid 自己是组长
     assert all(_pgid_of(member) == pid for member in descendants)
 
-    assert run_setup("status", "code-server", "dev").stdout.strip() == (
-        f"code-server[dev] 运行中 (pid {pid})"
+    assert run_setup("status", "code-server").stdout.strip() == (
+        f"code-server 运行中 (pid {pid})"
     )
 
-    stopped = run_setup("stop", "code-server", "dev")
+    stopped = run_setup("stop", "code-server")
     assert stopped.returncode == 0, stopped.stderr
     assert "已停止" in stopped.stdout
 
