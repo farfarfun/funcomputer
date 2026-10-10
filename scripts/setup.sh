@@ -23,7 +23,10 @@ pid_matches() {
     local service="$1" pid="$2" cmdline
     [ -r "/proc/$pid/cmdline" ] || return 1
     cmdline=$(tr '\0' ' ' <"/proc/$pid/cmdline")
-    [[ "$cmdline" == *"start_cmd '$service'"* ]]
+    case "$service" in
+        code-server) [[ "$cmdline" == *"start_code_server"* ]] ;;
+        natapp) [[ "$cmdline" == *"start_natapp"* ]] ;;
+    esac
 }
 
 pid_file_state() {
@@ -54,7 +57,8 @@ start_cmd() {
             usage
             ;;
     esac
-    (cd "$ROOT_DIR" && PYTHONPATH="$ROOT_DIR/src${PYTHONPATH:+:$PYTHONPATH}" python3 -c "$py_code")
+    cd "$ROOT_DIR"
+    exec env PYTHONPATH="$ROOT_DIR/src${PYTHONPATH:+:$PYTHONPATH}" python3 -c "$py_code"
 }
 
 do_start() {
@@ -79,10 +83,10 @@ do_start() {
     export ROOT_DIR
     export -f start_cmd usage
     # setsid 让服务自成一个会话/进程组，这样 do_stop 可以 `kill -- -PGID`
-    # 一次带走 bash 包装层 + python 解释器 + 底下真正的 code-server/natapp。
-    # 只 kill 包装层 PID 的话，真正的服务会被 reparent 成孤儿继续运行，
+    # 一次带走 Python 服务入口和底下真正的 code-server/natapp。
+    # 只 kill 服务入口 PID 的话，真正的服务会被 reparent 成孤儿继续运行，
     # 而脚本已经打印了「已停止」（实测过，对无认证 code-server 尤其危险）。
-    # pid 由包装层自己写 $$：setsid 在自身已是进程组首进程时会先 fork，
+    # pid 由启动 shell 自己写 $$：setsid 在自身已是进程组首进程时会先 fork，
     # 那种情况下 $! 拿到的是 setsid 而不是 bash，不能依赖 $!。
     setsid nohup bash -c "echo \$\$ >'$f'; start_cmd '$service'" \
         >"$(log_file "$service")" 2>&1 &

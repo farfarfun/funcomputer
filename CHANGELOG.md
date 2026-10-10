@@ -24,7 +24,7 @@
 
 ### 新增
 
-- 依赖补充版本下限，新增 `uv.lock` 保证可复现构建。
+- 依赖补充版本下限。
 - `scripts/setup.sh`：code-server / natapp 的统一生命周期管理入口，负责后台化、PID 文件与日志重定向，运行时文件落在 `.run/`。
 - `tests/` 按公开 API 补齐正常路径、参数边界与失败路径测试（`run_cmd`、`config_*`、`install_*`、`start_*`、setup.sh 生命周期），外部命令与 Colab 依赖全部用 mock 或假可执行文件隔离。
 

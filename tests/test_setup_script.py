@@ -57,6 +57,10 @@ def _pid_alive(pid: int) -> bool:
     return True
 
 
+def _cmdline_of(pid: int) -> str:
+    return Path(f"/proc/{pid}/cmdline").read_bytes().replace(b"\0", b" ").decode()
+
+
 @pytest.fixture
 def clean_run_dir():
     """每个生命周期测试前后都清空 `.run/`，避免污染 status 相关测试。"""
@@ -108,15 +112,17 @@ def test_stop_kills_the_whole_service_process_tree(tmp_path, clean_run_dir):
 
     pid_file = clean_run_dir / "code-server.pid"
     pid = int(pid_file.read_text().strip())
+    assert "python3 -c" in _cmdline_of(pid)
+    assert "start_code_server" in _cmdline_of(pid)
 
-    # 等整条 bash -> python3 -> sh -> code-server 链路起来
+    # 等整条 python3 -> sh -> code-server 链路起来
     descendants: list[int] = []
     for _ in range(50):
         descendants = _process_group_members(pid)
-        if len(descendants) >= 3:
+        if len(descendants) >= 2:
             break
         time.sleep(0.1)
-    assert len(descendants) >= 3, f"服务进程树没起来: {descendants}"
+    assert len(descendants) >= 2, f"服务进程树没起来: {descendants}"
     # setsid 的效果：整棵树和 pid 同一个进程组，pid 自己是组长
     assert all(_pgid_of(member) == pid for member in descendants)
 
