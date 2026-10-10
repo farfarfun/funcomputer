@@ -106,7 +106,7 @@ def start_code_server(user_data_dir: str | None = "/root/workspace") -> None:
 
     cmd = "code-server"
     if user_data_dir is not None:
-        cmd += " --user-data-dir " + user_data_dir
+        cmd += " --user-data-dir " + shlex.quote(user_data_dir)
     cmd += " --auth password"
     cmd += f" --config {config_dir}code/code-server.yaml"
     run_cmd(cmd)

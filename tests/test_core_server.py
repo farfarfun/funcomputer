@@ -79,6 +79,10 @@ def test_start_code_server_requires_password(monkeypatch):
     ("user_data_dir", "expected"),
     [
         ("/tmp/data", "code-server --user-data-dir /tmp/data --auth password"),
+        (
+            "/tmp/data dir; touch should-not-run",
+            "code-server --user-data-dir '/tmp/data dir; touch should-not-run' --auth password",
+        ),
         (None, "code-server --auth password"),
     ],
 )
