@@ -2,6 +2,8 @@
 
 Google Colab / 云端开发环境的个人一次性配置脚本集合：挂载 Google Drive、检查 SSH agent、配置 Git、安装并启动 code-server（网页版 VSCode）、通过 natapp 做内网穿透、拉取 fun 系列仓库到 workspace。代码里硬编码了大量个人路径（如 `/content/gdrive/My Drive/core/configs/`）和 Git 账号邮箱，本质是作者自用的 Colab 环境初始化脚本，没有做通用化封装，也没有 CLI 入口，目前不在维护中。code-server / natapp 这两个后台常驻进程通过 `scripts/setup.sh` 统一管理生命周期，PID 与日志落在仓库的 `.run/` 目录下。
 
+## 安装
+
 该包未发布到 PyPI，只能从源码安装：
 
 ```bash
